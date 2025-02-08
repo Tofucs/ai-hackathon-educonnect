@@ -13,7 +13,7 @@ if not openai.api_key:
 
 client = openai.OpenAI(api_key=openai.api_key)
 
-st.title("Tell me about what you need!")
+st.title("AI Chatbot")
 
 SYSTEM_MESSAGE = {
     "role": "system",
@@ -22,7 +22,8 @@ SYSTEM_MESSAGE = {
         "Your task is to ask only relevant questions to collect essential information from the school. "
         "Focus on asking for details such as the school's location, school size, and what specific kind of help they need. "
         "If the user provides irrelevant information or asks unrelated questions, kindly prompt them to provide the necessary details."
-        "Only ask one question at a time to not overwhelm the user."
+        "Ask one question at a time to not overwhelm the user."
+        "If the user provides information about a school, search online to try to find more information. if you find any, ask the student if the details you found are accurate. if they are, note that."
     )
 }
 
@@ -41,6 +42,8 @@ if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.write(user_input)
+    placeholder = st.empty()
+    placeholder.write("Loading response...")
     try:
         response = client.chat.completions.create(
             model="anthropic.claude-3.5-haiku",
@@ -48,7 +51,9 @@ if user_input:
         )
         assistant_reply = response.choices[0].message.content
         st.session_state.messages.append({"role": "assistant", "content": assistant_reply})
+        placeholder.empty()
         with st.chat_message("assistant"):
             st.write(assistant_reply)
     except Exception as e:
+        placeholder.empty()
         st.error(f"Error generating response: {str(e)}")
