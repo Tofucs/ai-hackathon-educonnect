@@ -13,30 +13,41 @@ if not openai.api_key:
 
 client = openai.OpenAI(api_key=openai.api_key)
 
-st.title("Summary of User Messages")
+st.title("Summary of Requests")
 
 if "messages" not in st.session_state or not st.session_state.messages:
     st.write("No messages to summarize yet.")
 else:
-    user_messages = [msg["content"] for msg in st.session_state.messages if msg["role"] == "user"]
-    if not user_messages:
-        st.write("No user messages to summarize yet.")
-    else:
-        st.write("### User Messages:")
-        for i, msg in enumerate(user_messages, start=1):
-            st.write(f"{i}. {msg}")
-        if st.button("Summarize User Messages"):
-            full_text = "\n".join(user_messages)
-            try:
-                response = client.chat.completions.create(
-                    model="anthropic.claude-3.5-haiku",
-                    messages=[
-                        {"role": "system", "content": "You are an assistant that summarizes user messages concisely."},
-                        {"role": "user", "content": f"Please provide a concise summary of the following user messages:\n\n{full_text}"}
-                    ],
-                )
-                summary = response.choices[0].message.content
-                st.subheader("Summary:")
-                st.write(summary)
-            except Exception as e:
-                st.error(f"Error summarizing messages: {str(e)}")
+    # Build conversation text including both the assistant's prompts and the user's responses.
+    conversation_text = ""
+    for msg in st.session_state.messages:
+        if msg["role"] in ["assistant", "user"]:
+            role_label = "Assistant" if msg["role"] == "assistant" else "User"
+            conversation_text += f"{role_label}: {msg['content']}\n"
+
+    placeholder = st.empty()
+    placeholder.write("Loading summary...")
+
+    try:
+        response = client.chat.completions.create(
+            model="anthropic.claude-3.5-haiku",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an AI assistant whose sole purpose is to match schools and students in need with nonprofit organizations that can help them. "
+                        "Your task is to ask only relevant questions to collect essential information from the school. "
+                        "Focus on asking for details such as the school's location, school size, and what specific kind of help they need. "
+                        "Now, based on the following conversation—which includes both your prompts and the user's responses—provide a concise summary that captures the essential details needed for matching schools and students with nonprofit organizations."
+                    )
+                },
+                {"role": "user", "content": conversation_text}
+            ],
+        )
+        summary = response.choices[0].message.content
+        placeholder.empty()
+        st.subheader("Summary:")
+        st.write(summary)
+    except Exception as e:
+        placeholder.empty()
+        st.error(f"Error summarizing conversation: {str(e)}")
