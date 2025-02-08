@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 # Set up the page configuration
-st.set_page_config(page_title="Nonprofit New York", layout="wide")
+st.set_page_config(page_title="EduConnect.AI", layout="wide")
 
 # Custom CSS for styling
 st.markdown("""

@@ -1,63 +1,59 @@
+# pages/chat.py
 import streamlit as st
 import os
 import openai
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
-
-# Initialize OpenAI client
-api_key = os.getenv("OPENAI_API_KEY")
-if not api_key:
+openai.api_base = os.getenv("OPENAI_BASE_URL")
+openai.api_key = os.getenv("OPENAI_API_KEY")
+if not openai.api_key:
     st.error("Missing OpenAI API Key! Make sure it's set in your .env file.")
     st.stop()
 
-client = openai.OpenAI(api_key=api_key)
+client = openai.OpenAI(api_key=openai.api_key)
+st.set_page_config(page_title="EduConnect.AI", layout="wide")
+st.title("Let me know what you need help with!")
 
-st.title("AI Chatbot")
-
-# Define AI's context with a system message
 SYSTEM_MESSAGE = {
     "role": "system",
-    "content": "You are an AI assistant designed to match students and schools who are low-income or in need by matching them with nonprofit organizations"
-               "You will ask questions about school location, size, what sort of help they need, etc."
-               "You will ask these questions one by one to not overwhelm the user"
-               "If the user asks irrelevant questions or responses then tell them you do not have a response to that, and prompt to tell you more about their needs."
+    "content": (
+        "You are an AI assistant whose sole purpose is to match schools and students in need with nonprofit organizations that can help them. "
+        "Your task is to ask only relevant questions to collect essential information from the school. "
+        "Focus on asking for details such as the school's location, school size, and what specific kind of help they need. "
+        "If the user provides irrelevant information or asks unrelated questions, kindly prompt them to provide the necessary details."
+        "Ask one question at a time to not overwhelm the user."
+        "If the user provides information about a school, search online to try to find more information. if you find any, ask the student if the details you found are accurate. if they are, note that."
+    )
 }
 
-# Initialize session state for chat history
 if "messages" not in st.session_state:
-    st.session_state.messages = [] 
-    initial_message = "Hello! Before we start, can you tell me a little bit about your school?"
-    st.session_state.messages.append({"role": "assistant", "content": initial_message})
+    st.session_state.messages = [{"role": "assistant", "content": "Hello! Before we start, can you tell me a little bit about your school?"}]
 
-# Display chat messages from history
+if st.button("Clear Chat History"):
+    st.session_state.messages = [{"role": "assistant", "content": "Hello! Before we start, can you tell me a little bit about your school?"}]
+
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.write(message["content"])
 
-# User input using chat input (always stays at the bottom)
 user_input = st.chat_input("Type your message...")
 if user_input:
-    # Append user message to chat history
     st.session_state.messages.append({"role": "user", "content": user_input})
-    
     with st.chat_message("user"):
         st.write(user_input)
-
-    # Generate response from OpenAI
+    placeholder = st.empty()
+    placeholder.write("Loading response...")
     try:
         response = client.chat.completions.create(
-            model="anthropic.claude-3.5-haiku",  # Change model if needed
-            messages=st.session_state.messages,
+            model="anthropic.claude-3.5-haiku",
+            messages=[SYSTEM_MESSAGE] + st.session_state.messages,
         )
         assistant_reply = response.choices[0].message.content
-
-        # Append assistant's reply to chat history
         st.session_state.messages.append({"role": "assistant", "content": assistant_reply})
-
+        placeholder.empty()
         with st.chat_message("assistant"):
             st.write(assistant_reply)
-
     except Exception as e:
+        placeholder.empty()
         st.error(f"Error generating response: {str(e)}")
