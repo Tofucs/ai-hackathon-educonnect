@@ -29,6 +29,7 @@ st.markdown("""
         color: #555555;
         text-align: center;
         margin-bottom: 10px;
+        margin: 0 100px 10px 100px !important;
         opacity: 0;
         
         animation: fadeIn 2s ease-in forwards;
@@ -60,14 +61,17 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-image_path = os.path.join(os.getcwd(), "nonprofit.jpg")
+col1, col2, col3 = st.columns([1, 3, 1])  # Adjust proportions as needed
+with col2: 
+    st.image("./app/images/EduConnect.png", use_container_width=True)
+
 # Centered Title
-st.markdown('<h1 class="header-title">EduConnect.AI</h1>', unsafe_allow_html=True)
+#st.markdown('<h1 class="header-title">EduConnect.AI</h1>', unsafe_allow_html=True)
 
-#col1, col2, col3 = st.columns([1, 3, 1])  # Adjust proportions as needed
+col1, col2, col3 = st.columns([1, 3, 1])  # Adjust proportions as needed
 
-#with col2:  # Center the image in the second column
-st.image("./app/images/nonprofit.jpg", use_container_width=True)
+with col2:  # Center the image in the second column
+    st.image("./app/images/nonprofit.jpg", use_container_width=True)
 
 st.markdown('<h2 class="subheading">What is EduConnect.AI?</h1>', unsafe_allow_html=True)
 
