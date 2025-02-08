@@ -6,8 +6,16 @@ st.set_page_config(page_title="EduConnect.AI", layout="wide")
 # Custom CSS for styling
 st.markdown("""
     <style>
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
     .header-title {
-        font-size: 70px;
+        font-size: 60px;
         font-weight: bold;
         color: #FF4A4A;
         text-align: center;
@@ -16,10 +24,19 @@ st.markdown("""
     .description {
         font-size: 20px;
         color: #555555;
-        text-align: left;
+        text-align: center;
         margin-bottom: 30px;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeIn 2s ease-in forwards;
     }
-
+    .subheading {
+        text-align: center;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeIn 2.5s ease-in forwards;
+     
+    }
     .stButton button {
         background-color: #FF4A4A;
         color: white;
@@ -37,10 +54,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 image_path = os.path.join(os.getcwd(), "nonprofit.jpg")
-st.image("./nonprofit.jpg", use_column_width=True)
-
 # Centered Title
 st.markdown('<h1 class="header-title">EduConnect.AI</h1>', unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns([1, 3, 1])  # Adjust proportions as needed
+
+with col2:  # Center the image in the second column
+    st.image("./app/images/nonprofit.jpg", use_container_width=True)
 
 st.markdown('<h2 class="subheading">What is EduConnect.AI?</h1>', unsafe_allow_html=True)
 
