@@ -57,7 +57,7 @@ else:
             "The search query should emphasize details such as location, specific needs, and types of assistance, "
             "but it must NOT include any information about the school or its website. "
             "Only include keywords relevant to nonprofit organizations and their services. "
-            "The query should only contain the support needed and the location, NOTHING ELSE. it should be a couple words or phrases at most. "
+            "The query should only contain the support needed and the location, NOTHING ELSE. it should be a couple words or phrases at most. make sure the last word is always nonprofit "
             "\n\nSummary:\n" + summary
         )
         

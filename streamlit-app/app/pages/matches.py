@@ -225,8 +225,38 @@ else:
 update_recommendations()
 
 ##########################################
-# Swipe Interface
+# Swipe Interface with Callback Functions
 ##########################################
+
+def dislike_candidate():
+    # Get the current candidate
+    current = st.session_state.nonprofit_matches[0]
+    # Add it to the disliked list and remove from the matches
+    st.session_state.disliked.append(current)
+    st.session_state.nonprofit_matches.pop(0)
+    # Update the recommendations based on new state
+    update_recommendations()
+    # Rerun the app to display the next candidate
+    if hasattr(st, "experimental_rerun"):
+        st.experimental_rerun()
+    else:
+        st.write("Please refresh the page manually.")
+
+def like_candidate():
+    # Get the current candidate
+    current = st.session_state.nonprofit_matches[0]
+    # Add it to the liked list and remove from the matches
+    st.session_state.liked.append(current)
+    st.session_state.nonprofit_matches.pop(0)
+    # Update the recommendations based on new state
+    update_recommendations()
+    # Rerun the app to display the next candidate
+    if hasattr(st, "experimental_rerun"):
+        st.experimental_rerun()
+    else:
+        st.write("Please refresh the page manually.")
+
+# Display the current candidate if available.
 if st.session_state.nonprofit_matches:
     current = st.session_state.nonprofit_matches[0]
     
@@ -234,19 +264,10 @@ if st.session_state.nonprofit_matches:
     st.write(current.get("summary", "No summary available."))
     st.write(f"[Visit Website]({current.get('link', '#')})")
     
+    # Use on_click callbacks so that state updates occur immediately.
     col1, col2 = st.columns(2)
-    with col1:
-        if st.button("❌ Dislike"):
-            st.session_state.disliked.append(current)
-            st.session_state.nonprofit_matches.pop(0)
-            update_recommendations()
-            rerun_app()
-    with col2:
-        if st.button("❤️ Like"):
-            st.session_state.liked.append(current)
-            st.session_state.nonprofit_matches.pop(0)
-            update_recommendations()
-            rerun_app()
+    col1.button("❌ Dislike", on_click=dislike_candidate)
+    col2.button("❤️ Like", on_click=like_candidate)
 else:
     st.write("🎉 No more nonprofit matches available!")
 
