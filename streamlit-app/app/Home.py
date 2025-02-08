@@ -1,7 +1,7 @@
 import streamlit as st
 
 # Set up the page configuration
-st.set_page_config(page_title="Nonprofit New York", layout="wide")
+st.set_page_config(page_title="EduConnect.AI", layout="wide")
 
 # Custom CSS for styling
 st.markdown("""
@@ -50,7 +50,7 @@ with col3:
     st.button("Selection")
 with col4:
     if st.button("Summary"):
-        st.switch_page("pages/summarize.py")
+        st.switch_page("pages/Summarize.py")
 st.markdown('</div>', unsafe_allow_html=True)
 
 

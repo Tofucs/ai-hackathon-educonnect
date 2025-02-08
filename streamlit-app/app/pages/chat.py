@@ -12,8 +12,8 @@ if not openai.api_key:
     st.stop()
 
 client = openai.OpenAI(api_key=openai.api_key)
-
-st.title("AI Chatbot")
+st.set_page_config(page_title="EduConnect.AI", layout="wide")
+st.title("Let me know what you need help with!")
 
 SYSTEM_MESSAGE = {
     "role": "system",

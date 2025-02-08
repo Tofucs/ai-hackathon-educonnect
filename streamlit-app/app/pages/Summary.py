@@ -11,9 +11,10 @@ if not openai.api_key:
     st.error("Missing OpenAI API Key! Make sure it's set in your .env file.")
     st.stop()
 
-client = openai.OpenAI(api_key=openai.api_key)
 
-st.title("Summary of Conversation")
+client = openai.OpenAI(api_key=openai.api_key)
+st.set_page_config(page_title="EduConnect.AI", layout="wide")
+st.title("Summary of Requests")
 
 if "messages" not in st.session_state or not st.session_state.messages:
     st.write("No messages to summarize yet.")
