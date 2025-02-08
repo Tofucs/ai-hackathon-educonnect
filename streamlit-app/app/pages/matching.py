@@ -140,8 +140,27 @@ st.title("Nonprofit Swipe App")
 if st.session_state.recommendations:
     current = st.session_state.recommendations[0]  # Show first recommendation
 
-    st.subheader(current["name"])
-    st.write(current["description"])
+    st.markdown("""
+        <style>
+        .recommendation-box {
+            border: 2px solid #000;
+            border-radius: 12px;
+            padding: 20px;
+            background-color: #F9F9F9;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    st.markdown(f"""
+        <div class="recommendation-box">
+            <h2>{current["name"]}</h2>
+            <p>{current["description"]}</p>
+        </div>
+    """, unsafe_allow_html=True)
+    #st.subheader(current["name"])
+    #st.write(current["description"])
 
     col1, col2 = st.columns(2)
 
