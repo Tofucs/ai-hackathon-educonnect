@@ -44,12 +44,13 @@ with col1:
     if st.button("Home"):
         st.switch_page("Home.py")
 with col2:
-    st.button("Chat")
-with col3:
-    if st.button("Selection"):
+    if st.button("Chat"):
         st.switch_page("pages/chat.py")
+with col3:
+    st.button("Selection")
 with col4:
-    st.button("Connect")
+    if st.button("Summary"):
+        st.switch_page("pages/summarize.py")
 st.markdown('</div>', unsafe_allow_html=True)
 
 
