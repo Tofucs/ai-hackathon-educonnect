@@ -22,8 +22,8 @@ nonprofits = [
     {"name": "Women in STEM", "description": "Empowering women in science, technology, engineering, and mathematics."},
     {"name": "Blue Earth", "description": "Fighting climate change through tree planting and conservation efforts."},
     {"name": "Red Earth", "description": "Fighting climate change through tree planting and conservation efforts."},
-    {"name": "Women in Kitchen", "description": "Empowering women in science, technology, engineering, and mathematics."},
-    {"name": "Women in Chef", "description": "Empowering women in science, technology, engineering, and mathematics."},
+    {"name": "Women in REM", "description": "Empowering women in science, technology, engineering, and mathematics."},
+    {"name": "Women in RAM", "description": "Empowering women in science, technology, engineering, and mathematics."},
 ]
 
 # Initialize session state
@@ -60,38 +60,47 @@ def get_embedding(text):
 
 # Function to update recommendations
 def update_recommendations():
-    if not st.session_state.liked:
+    if not st.session_state.liked and not st.session_state.disliked:
         st.session_state.recommendations = nonprofits  # Show all if no preferences
         return
 
     # Get embeddings for liked and disliked nonprofits
-    liked_embeddings = [get_embedding(nonprofit["description"]) for nonprofit in st.session_state.liked]
-    disliked_embeddings = [get_embedding(nonprofit["description"]) for nonprofit in st.session_state.disliked]
-    
+    liked_embeddings = [get_embedding(nonprofit["description"]) for nonprofit in st.session_state.liked] if st.session_state.liked else []
+    disliked_embeddings = [get_embedding(nonprofit["description"]) for nonprofit in st.session_state.disliked] if st.session_state.disliked else []
+
     new_recommendations = []
-    
+
     for nonprofit in nonprofits:
+        # Skip if the nonprofit is already liked or disliked
         if nonprofit in st.session_state.liked or nonprofit in st.session_state.disliked:
-            continue  # Skip already seen
+            continue
 
         nonprofit_embedding = get_embedding(nonprofit["description"])
 
         # Compute similarity with liked and disliked nonprofits
-        liked_similarities = [cosine_similarity([nonprofit_embedding], [le])[0][0] for le in liked_embeddings]
+        liked_similarities = [cosine_similarity([nonprofit_embedding], [le])[0][0] for le in liked_embeddings] if liked_embeddings else [0]
         disliked_similarities = [cosine_similarity([nonprofit_embedding], [de])[0][0] for de in disliked_embeddings] if disliked_embeddings else [0]
 
         avg_liked_similarity = np.mean(liked_similarities) if liked_similarities else 0
         avg_disliked_similarity = np.mean(disliked_similarities) if disliked_similarities else 0
 
-        # Keep nonprofits more similar to liked ones and dissimilar to disliked ones
-        if avg_liked_similarity > avg_disliked_similarity:
+        # Iterate through disliked similarities and apply a penalty if any similarity is high
+        penalty = 0
+        for d_sim in disliked_similarities:
+            if d_sim >= 0.5:  
+                penalty = 1  
+                break  
+
+        # Add nonprofits with a higher similarity to liked ones and lower penalty from disliked ones
+        if penalty == 0:
             new_recommendations.append((nonprofit, avg_liked_similarity))
 
     # Sort recommendations by similarity score
     new_recommendations.sort(key=lambda x: x[1], reverse=True)
-    
+
     # Update state
     st.session_state.recommendations = [x[0] for x in new_recommendations]
+
 
 def update_recommendations2():
     if not st.session_state.liked and not st.session_state.disliked:
@@ -99,7 +108,7 @@ def update_recommendations2():
         return
 
     # Ensure disliked nonprofits are completely excluded from recommendations
-    remaining_nonprofits = [n for n in nonprofits if n not in st.session_state.disliked]
+    remaining_nonprofits = [n for n in nonprofits if n not in st.session_state.disliked and n not in st.session_state.liked]
 
     # Get embeddings for liked and disliked nonprofits
     liked_embeddings = [get_embedding(nonprofit["description"]) for nonprofit in st.session_state.liked] if st.session_state.liked else []
@@ -108,8 +117,6 @@ def update_recommendations2():
     new_recommendations = []
 
     for nonprofit in remaining_nonprofits:
-        if nonprofit in st.session_state.liked:
-            continue  # Skip already liked ones
 
         nonprofit_embedding = get_embedding(nonprofit["description"])
 
@@ -134,6 +141,7 @@ def update_recommendations2():
     st.session_state.recommendations = [x[0] for x in new_recommendations]
 
 
+
 # Streamlit UI
 st.title("Nonprofit Swipe App")
 
@@ -146,6 +154,7 @@ if st.session_state.recommendations:
             border: 2px solid #000;
             border-radius: 12px;
             padding: 20px;
+
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
@@ -166,13 +175,13 @@ if st.session_state.recommendations:
     with col1:
         if st.button("❌ Dislike"):
             st.session_state.disliked.append(current)
-            update_recommendations2()
+            update_recommendations()
             st.rerun()
 
     with col2:
         if st.button("❤️ Like"):
             st.session_state.liked.append(current)
-            update_recommendations2()
+            update_recommendations()
             st.rerun()
 
 else:
@@ -187,3 +196,4 @@ for item in st.session_state.liked:
 st.write("### ❌ Disliked")
 for item in st.session_state.disliked:
     st.write(f"- {item['name']}")
+
