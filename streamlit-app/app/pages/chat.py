@@ -13,15 +13,16 @@ if not openai.api_key:
 
 client = openai.OpenAI(api_key=openai.api_key)
 
-st.title("AI Chatbot")
+st.title("Tell me about what you need!")
 
 SYSTEM_MESSAGE = {
     "role": "system",
     "content": (
-        "You are an AI assistant designed to match students and schools who are low-income or in need by matching them with nonprofit organizations. "
-        "You will ask questions about school location, size, what sort of help they need, etc. "
-        "You will ask these questions one by one to not overwhelm the user. "
-        "If the user asks irrelevant questions or responses then tell them you do not have a response to that, and prompt to tell you more about their needs."
+        "You are an AI assistant whose sole purpose is to match schools and students in need with nonprofit organizations that can help them. "
+        "Your task is to ask only relevant questions to collect essential information from the school. "
+        "Focus on asking for details such as the school's location, school size, and what specific kind of help they need. "
+        "If the user provides irrelevant information or asks unrelated questions, kindly prompt them to provide the necessary details."
+        "Only ask one question at a time to not overwhelm the user."
     )
 }
 
@@ -43,7 +44,7 @@ if user_input:
     try:
         response = client.chat.completions.create(
             model="anthropic.claude-3.5-haiku",
-            messages=st.session_state.messages,
+            messages=[SYSTEM_MESSAGE] + st.session_state.messages,
         )
         assistant_reply = response.choices[0].message.content
         st.session_state.messages.append({"role": "assistant", "content": assistant_reply})
