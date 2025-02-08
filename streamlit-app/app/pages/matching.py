@@ -22,8 +22,8 @@ nonprofits = [
     {"name": "Women in STEM", "description": "Empowering women in science, technology, engineering, and mathematics."},
     {"name": "Blue Earth", "description": "Fighting climate change through tree planting and conservation efforts."},
     {"name": "Red Earth", "description": "Fighting climate change through tree planting and conservation efforts."},
-    {"name": "Women in Kitchen", "description": "Empowering women in science, technology, engineering, and mathematics."},
-    {"name": "Women in Chef", "description": "Empowering women in science, technology, engineering, and mathematics."},
+    {"name": "Women in REM", "description": "Empowering women in science, technology, engineering, and mathematics."},
+    {"name": "Women in RAM", "description": "Empowering women in science, technology, engineering, and mathematics."},
 ]
 
 # Initialize session state
@@ -108,7 +108,7 @@ def update_recommendations2():
     new_recommendations = []
 
     for nonprofit in remaining_nonprofits:
-        if nonprofit in st.session_state.liked:
+        if nonprofit in st.session_state.liked or nonprofit in st.session_state.disliked:
             continue  # Skip already liked ones
 
         nonprofit_embedding = get_embedding(nonprofit["description"])
@@ -132,6 +132,7 @@ def update_recommendations2():
 
     # Update state
     st.session_state.recommendations = [x[0] for x in new_recommendations]
+
 
 
 # Streamlit UI
