@@ -118,7 +118,7 @@ def get_embedding(text):
     )
     return np.array(response.data[0].embedding)
 
-def update_recommendations_api():
+def update_recommendations():
     """
     Update the list of nonprofit matches based on the cosine similarity
     between the embeddings of each candidate's summary and those of the liked
@@ -128,24 +128,55 @@ def update_recommendations_api():
     # If no preferences have been set, do nothing.
     if not st.session_state.liked and not st.session_state.disliked:
         return
-    # Use only those candidates that haven't been swiped on yet.
-    remaining = [n for n in st.session_state.nonprofit_matches if n not in st.session_state.liked and n not in st.session_state.disliked]
-    liked_embeddings = [get_embedding(n["summary"]) for n in st.session_state.liked] if st.session_state.liked else []
-    disliked_embeddings = [get_embedding(n["summary"]) for n in st.session_state.disliked] if st.session_state.disliked else []
-    new_matches = []
-    for candidate in remaining:
-        candidate_embedding = get_embedding(candidate["summary"])
-        liked_sims = [cosine_similarity([candidate_embedding], [emb])[0][0] for emb in liked_embeddings] if liked_embeddings else [0]
-        disliked_sims = [cosine_similarity([candidate_embedding], [emb])[0][0] for emb in disliked_embeddings] if disliked_embeddings else [0]
-        avg_liked = np.mean(liked_sims) if liked_sims else 0
-        avg_disliked = np.mean(disliked_sims) if disliked_sims else 0
-        # Exclude candidates that are too similar to disliked ones.
-        if avg_disliked >= 0.5:
+
+    new_recommendations = []
+
+    # Iterate only over candidates that haven't been swiped on yet.
+    for candidate in st.session_state.nonprofit_matches:
+        if candidate in st.session_state.liked or candidate in st.session_state.disliked:
             continue
-        new_matches.append((candidate, avg_liked))
-    # Sort the candidates by similarity to liked nonprofits (highest first).
-    new_matches.sort(key=lambda x: x[1], reverse=True)
-    st.session_state.nonprofit_matches = [x[0] for x in new_matches]
+
+        # Use the "summary" field (not "description") from your SERP API results.
+        candidate_embedding = get_embedding(candidate["summary"])
+
+        # Get embeddings for liked and disliked nonprofits (using their "summary")
+        liked_embeddings = (
+            [get_embedding(n["summary"]) for n in st.session_state.liked]
+            if st.session_state.liked else []
+        )
+        disliked_embeddings = (
+            [get_embedding(n["summary"]) for n in st.session_state.disliked]
+            if st.session_state.disliked else []
+        )
+
+        # Compute cosine similarities.
+        liked_similarities = (
+            [cosine_similarity([candidate_embedding], [emb])[0][0] for emb in liked_embeddings]
+            if liked_embeddings else [0]
+        )
+        disliked_similarities = (
+            [cosine_similarity([candidate_embedding], [emb])[0][0] for emb in disliked_embeddings]
+            if disliked_embeddings else [0]
+        )
+
+        avg_liked_similarity = np.mean(liked_similarities) if liked_similarities else 0
+        # (avg_disliked_similarity is computed here if needed)
+        # avg_disliked_similarity = np.mean(disliked_similarities) if disliked_similarities else 0
+
+        # Apply a penalty: if any disliked similarity is high, mark candidate for exclusion.
+        penalty = 0
+        for d_sim in disliked_similarities:
+            if d_sim >= 0.5:
+                penalty = 1
+                break
+
+        # Only add candidates with no penalty.
+        if penalty == 0:
+            new_recommendations.append((candidate, avg_liked_similarity))
+
+    # Sort the remaining candidates by their average liked similarity (highest first).
+    new_recommendations.sort(key=lambda x: x[1], reverse=True)
+    st.session_state.nonprofit_matches = [x[0] for x in new_recommendations]
 
 ##########################################
 # Main Application Logic
@@ -191,7 +222,7 @@ else:
     st.session_state.nonprofit_matches = filtered_matches
 
 # Use the recommendation algorithm to update the ordering of matches.
-update_recommendations_api()
+update_recommendations()
 
 ##########################################
 # Swipe Interface
@@ -208,13 +239,13 @@ if st.session_state.nonprofit_matches:
         if st.button("❌ Dislike"):
             st.session_state.disliked.append(current)
             st.session_state.nonprofit_matches.pop(0)
-            update_recommendations_api()
+            update_recommendations()
             rerun_app()
     with col2:
         if st.button("❤️ Like"):
             st.session_state.liked.append(current)
             st.session_state.nonprofit_matches.pop(0)
-            update_recommendations_api()
+            update_recommendations()
             rerun_app()
 else:
     st.write("🎉 No more nonprofit matches available!")
