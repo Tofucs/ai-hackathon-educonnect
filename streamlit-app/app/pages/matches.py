@@ -56,6 +56,7 @@ async def summarize_with_ai(text: str, url: str) -> str:
     summary = response.choices[0].message.content
     return summary.strip()
 
+#not used right now, usedd for other things!!
 async def fetch_full_page(url: str) -> str:
     async with ClientSession() as session:
         async with session.get(url) as response:
