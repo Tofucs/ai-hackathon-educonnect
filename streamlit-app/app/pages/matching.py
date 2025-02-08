@@ -99,7 +99,7 @@ def update_recommendations2():
         return
 
     # Ensure disliked nonprofits are completely excluded from recommendations
-    remaining_nonprofits = [n for n in nonprofits if n not in st.session_state.disliked]
+    remaining_nonprofits = [n for n in nonprofits if n not in st.session_state.disliked and n not in st.session_state.liked]
 
     # Get embeddings for liked and disliked nonprofits
     liked_embeddings = [get_embedding(nonprofit["description"]) for nonprofit in st.session_state.liked] if st.session_state.liked else []
@@ -108,8 +108,6 @@ def update_recommendations2():
     new_recommendations = []
 
     for nonprofit in remaining_nonprofits:
-        if nonprofit in st.session_state.liked or nonprofit in st.session_state.disliked:
-            continue  # Skip already liked ones
 
         nonprofit_embedding = get_embedding(nonprofit["description"])
 
@@ -147,7 +145,7 @@ if st.session_state.recommendations:
             border: 2px solid #000;
             border-radius: 12px;
             padding: 20px;
-            background-color: #F9F9F9;
+
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
