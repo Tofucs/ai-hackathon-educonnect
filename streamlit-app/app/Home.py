@@ -47,7 +47,7 @@ with col2:
     st.button("Chat")
 with col3:
     if st.button("Selection"):
-        st.switch_page("pages/Page2.py")
+        st.switch_page("pages/chat.py")
 with col4:
     st.button("Connect")
 st.markdown('</div>', unsafe_allow_html=True)
