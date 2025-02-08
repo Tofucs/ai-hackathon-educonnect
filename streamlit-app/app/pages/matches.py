@@ -28,6 +28,17 @@ if not openai.api_key:
 st.set_page_config(page_title="Nonprofit Matches", layout="wide")
 st.title("Nonprofit Matches (Swipe Interface)")
 
+# Initialize necessary session state variables if they don't exist.
+if "liked" not in st.session_state:
+    st.session_state.liked = []
+if "disliked" not in st.session_state:
+    st.session_state.disliked = []
+if "nonprofit_matches" not in st.session_state:
+    st.session_state.nonprofit_matches = []
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+# Note: "latest_summary" and "summary_hash" may or may not be set already.
+
 # SERP API key (consider storing this in an environment variable)
 SERP_API_KEY = "1c92173370dc002dd7a0053eb47eeef87f9cce81bc61ccdcc766c1672a4b0087"
 
@@ -39,6 +50,66 @@ def rerun_app():
         st.experimental_rerun()
     else:
         st.write("Please refresh the page manually.")
+
+##########################################
+# Generate Summary (if needed)
+##########################################
+# If there is no generated search query (stored in st.session_state.latest_summary),
+# then try to generate one from conversation messages.
+if "latest_summary" not in st.session_state or not st.session_state.latest_summary:
+    if st.session_state.messages:
+        # Build conversation text from messages.
+        conversation_text = ""
+        for msg in st.session_state.messages:
+            if msg["role"] in ["assistant", "user"]:
+                role_label = "Assistant" if msg["role"] == "assistant" else "User"
+                conversation_text += f"{role_label}: {msg['content']}\n"
+        with st.spinner("Generating summary and search query..."):
+            try:
+                # System prompt to generate the summary.
+                SYSTEM_PROMPT = (
+                    "You are an AI assistant whose sole purpose is to match schools and students in need with nonprofit organizations that can help them. "
+                    "Your task is to ask only relevant questions to collect essential information from the school, including details such as the school's location, "
+                    "school size, and the specific kind of help needed. "
+                    "If the conversation contains any externally verified information about a high school (e.g., from online searches, such as its location or size), "
+                    "include that information in your summary. "
+                    "Now, based on the following conversation—which includes both your prompts and the user's responses—provide a concise summary that captures the essential details needed for matching. "
+                    "You should not ask the user to provide more details, only summarize the details they have provided."
+                )
+                summary_response = openai.chat.completions.create(
+                    model="anthropic.claude-3.5-haiku",
+                    messages=[
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": conversation_text}
+                    ],
+                )
+                summary = summary_response.choices[0].message.content.strip()
+                
+                # Now, generate a search query based on the summary.
+                QUERY_PROMPT = (
+                    "Based on the following summary, generate a search query that focuses on nonprofit organizations providing aid. "
+                    "The search query should emphasize details such as location, specific needs, and types of assistance, "
+                    "but it must NOT include any information about the school or its website. "
+                    "Only include keywords relevant to nonprofit organizations and their services. "
+                    "The query should only contain the support needed and the location, NOTHING ELSE. It should be a couple words or phrases at most. "
+                    "Make sure the last word is always 'nonprofit'."
+                    "\n\nSummary:\n" + summary
+                )
+                query_response = openai.chat.completions.create(
+                    model="anthropic.claude-3.5-haiku",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": QUERY_PROMPT}
+                    ],
+                )
+                search_query = query_response.choices[0].message.content.strip()
+                st.session_state.latest_summary = search_query
+            except Exception as e:
+                st.error(f"Error generating summary/search query: {e}")
+                st.stop()
+    else:
+        st.write("No conversation messages found to generate a summary. Please provide conversation messages first.")
+        st.stop()
 
 ##########################################
 # Asynchronous Functions for SERP API Calls
@@ -61,7 +132,6 @@ async def search_serpapi(prompt: str) -> list:
                 "title": item.get("title", "No title"),
                 "link": item.get("link", ""),
                 # Use the snippet as a starting point for the summary.
-                # (It will be further refined via the AI summarization.)
                 "summary": item.get("snippet", "")
             }
             for item in data.get("organic_results", [])[:5]
@@ -136,7 +206,7 @@ def update_recommendations():
         if candidate in st.session_state.liked or candidate in st.session_state.disliked:
             continue
 
-        # Use the "summary" field (not "description") from your SERP API results.
+        # Use the "summary" field from your SERP API results.
         candidate_embedding = get_embedding(candidate["summary"])
 
         # Get embeddings for liked and disliked nonprofits (using their "summary")
@@ -160,8 +230,6 @@ def update_recommendations():
         )
 
         avg_liked_similarity = np.mean(liked_similarities) if liked_similarities else 0
-        # (avg_disliked_similarity is computed here if needed)
-        # avg_disliked_similarity = np.mean(disliked_similarities) if disliked_similarities else 0
 
         # Apply a penalty: if any disliked similarity is high, mark candidate for exclusion.
         penalty = 0
@@ -181,23 +249,12 @@ def update_recommendations():
 ##########################################
 # Main Application Logic
 ##########################################
-# Ensure that a summary has been generated on your Summary page.
-if "latest_summary" not in st.session_state or not st.session_state.latest_summary:
-    st.write("No summary found. Please generate a summary on the Summary page first.")
-    st.stop()
-
-# Initialize liked/disliked lists if not already in session state.
-if "liked" not in st.session_state:
-    st.session_state.liked = []
-if "disliked" not in st.session_state:
-    st.session_state.disliked = []
-
-# Compute a hash of the current summary to check for changes.
+# At this point, st.session_state.latest_summary should be set (either previously or just generated).
 current_summary = st.session_state.latest_summary
 current_summary_hash = hashlib.sha256(current_summary.encode()).hexdigest()
 
 # If a new summary is generated (or if nonprofit_matches is not set), fetch new matches.
-if st.session_state.get("summary_hash") != current_summary_hash or "nonprofit_matches" not in st.session_state:
+if st.session_state.get("summary_hash") != current_summary_hash or "nonprofit_matches" not in st.session_state or not st.session_state.nonprofit_matches:
     with st.spinner("Generating nonprofit matches..."):
         try:
             matches = asyncio.run(full_search_summarize(current_summary))
@@ -227,36 +284,26 @@ update_recommendations()
 ##########################################
 # Swipe Interface with Callback Functions
 ##########################################
-
 def dislike_candidate():
-    # Get the current candidate
     current = st.session_state.nonprofit_matches[0]
-    # Add it to the disliked list and remove from the matches
     st.session_state.disliked.append(current)
     st.session_state.nonprofit_matches.pop(0)
-    # Update the recommendations based on new state
     update_recommendations()
-    # Rerun the app to display the next candidate
     if hasattr(st, "experimental_rerun"):
         st.experimental_rerun()
     else:
         st.write("Please refresh the page manually.")
 
 def like_candidate():
-    # Get the current candidate
     current = st.session_state.nonprofit_matches[0]
-    # Add it to the liked list and remove from the matches
     st.session_state.liked.append(current)
     st.session_state.nonprofit_matches.pop(0)
-    # Update the recommendations based on new state
     update_recommendations()
-    # Rerun the app to display the next candidate
     if hasattr(st, "experimental_rerun"):
         st.experimental_rerun()
     else:
         st.write("Please refresh the page manually.")
 
-# Display the current candidate if available.
 if st.session_state.nonprofit_matches:
     current = st.session_state.nonprofit_matches[0]
     
@@ -264,7 +311,6 @@ if st.session_state.nonprofit_matches:
     st.write(current.get("summary", "No summary available."))
     st.write(f"[Visit Website]({current.get('link', '#')})")
     
-    # Use on_click callbacks so that state updates occur immediately.
     col1, col2 = st.columns(2)
     col1.button("❌ Dislike", on_click=dislike_candidate)
     col2.button("❤️ Like", on_click=like_candidate)
