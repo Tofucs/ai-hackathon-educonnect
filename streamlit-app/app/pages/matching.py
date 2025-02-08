@@ -146,7 +146,6 @@ if st.session_state.recommendations:
             border: 2px solid #000;
             border-radius: 12px;
             padding: 20px;
-            background-color: #F9F9F9;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
         }
