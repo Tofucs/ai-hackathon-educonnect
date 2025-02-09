@@ -111,62 +111,170 @@ if "latest_summary" not in st.session_state or not st.session_state.latest_summa
         st.write("No conversation messages found to generate a summary. Please provide conversation messages first.")
         st.stop()
 
+
+
+
+
+
+
+
+
+
 ##########################################
 # Asynchronous Functions for SERP API Calls
 ##########################################
+
 async def search_serpapi(prompt: str) -> list:
-    # Clean the prompt: remove newlines and extra whitespace
-    clean_query = prompt.replace("\n", " ")
-    clean_query = " ".join(clean_query.split())
-    # Append a nonprofit filter so that the results focus on nonprofit aid organizations
-    filtered_query = f"{clean_query} nonprofit organization providing aid"
-    # URL‑encode the query
-    encoded_query = urllib.parse.quote(filtered_query)
-    url = f"https://serpapi.com/search.json?q={encoded_query}&engine=google&api_key={SERP_API_KEY}"
-    
+    """
+    Perform a single SERP API search request for the given prompt.
+    """
+    query = prompt
+    url = f"https://serpapi.com/search.json?q={query}&engine=google&api_key={SERP_API_KEY}"
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
         data = response.json()
         results = [
             {
-                "title": item.get("title", "No title"),
+                "title": item.get("title", ""),
                 "link": item.get("link", ""),
-                # Use the snippet as a starting point for the summary.
-                "summary": item.get("snippet", "")
+                "snippet": item.get("snippet", "")
             }
-            for item in data.get("organic_results", [])[:5]
+            for item in data.get("organic_results", [])
         ]
-        return results
+    return results
 
-async def summarize_with_ai(text: str, url: str) -> str:
+async def is_nonprofit(text: str, url: str) -> bool:
+    """
+    Determine—via an AI call—whether the given snippet (or full page if snippet is empty)
+    suggests that the website represents a nonprofit organization.
+    The AI is instructed to respond with a simple 'Yes' or 'No'.
+    """
+    
     response = openai.chat.completions.create(
         model='anthropic.claude-3.5-sonnet.v2',
         messages=[
             {
                 'role': 'user',
                 'content': (
-                    f"Summarize this snippet about a non-profit:\n\n{text}\n\n"
-                    f"Include the context from this website: {url}. ONLY DISPLAY NONPROFIT ORGANIZATIONS PROVIDING AID, NOTHING ELSE. "
-                    "If you cannot summarize, say no summary available."
+                    f"Based on the following snippet and URL, determine if the website likely represents a nonprofit organization. "
+                    f"Do not attempt to read from the url website. Instead just make a guess from the webpage name"
+                    f"You must be VERY confident"
+                    f"Answer only 'Yes' or 'No'.\n\nSnippet: {text}\n\nURL: {url}"
                 )
             },
         ],
     )
-    summary = response.choices[0].message.content
-    return summary.strip()
+    '''
+    if not (answer.startswith("yes") or answer.startswith("no")):
+        additional_text = await fetch_full_page(url)
+        # Reuse the original prompt plus additional scraped content.
+        prompt_text_extended = (
+            f"I previously asked: Based on the following snippet and URL, determine if the website likely represents a nonprofit organization. "
+            f"Answer only 'Yes' or 'No'.\n\nSnippet: {text}\n\nURL: {url}\n\n"
+            f"I have also scraped additional context from the website: {additional_text}\n\n"
+            f"Please answer with only 'Yes' or 'No'."
+        )
+        response = openai.chat.completions.create(
+            model='anthropic.claude-3.5-sonnet.v2',
+            messages=[{'role': 'user', 'content': prompt_text_extended}],
+        )
+        answer = response.choices[0].message.content.strip().lower()'''
+    answer = response.choices[0].message.content.strip().lower()
+    return answer.startswith("yes")
 
-async def full_search_summarize(prompt: str) -> list:
-    search_results = await search_serpapi(prompt)
+async def retrieve_nonprofit_candidates(prompt: str, max_candidates: int = 5, max_results: int = 100) -> list:
+    """
+    Use SERP API (with pagination) to search for the prompt.
+    Only return candidate results that have '.org' in their URL and for which an AI (via is_nonprofit)
+    judges as likely a nonprofit.
+    Stop when either max_candidates have been collected or when max_results have been processed.
+    """
+    candidates = []
+    total_processed = 0
+    start = 0
+
+    while total_processed < max_results and len(candidates) < max_candidates:
+        url = f"https://serpapi.com/search.json?q={prompt}&engine=google&api_key={SERP_API_KEY}&start={start}"
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+            data = response.json()
+        organic_results = data.get("organic_results", [])
+        if not organic_results:
+            break
+
+        for item in organic_results:
+            if total_processed >= max_results:
+                break
+            total_processed += 1
+            link = item.get("link", "")
+            # Only consider URLs with .org
+            if ".org" not in link:
+                continue
+            snippet = item.get("snippet", "")
+            if await is_nonprofit(snippet, link):
+                candidates.append({
+                    "title": item.get("title", ""),
+                    "link": link,
+                    "snippet": snippet
+                })
+                if len(candidates) >= max_candidates:
+                    break
+        start += len(organic_results)
+    return candidates
+
+async def summarize_with_ai(text: str, url: str) -> str:
+    """
+    Generate a summary of the snippet with context from the given URL.
+    """
+    response = openai.chat.completions.create(
+        model='anthropic.claude-3.5-sonnet.v2',
+        messages=[
+            {
+                'role': 'user',
+                'content': f"Summarize this snippet about a non-profit:\n\n{text}\n\nInclude any context you know about {url}"
+                f"If unable to gather enough significant information, please say 'No summary available"
+                f"If at least two facts are present about the non-profit, please attempt to summarize."
+            },
+        ],
+    )
+    summary = response.choices[0].message.content.strip()
+    return summary
+
+async def generate_nonprofit_summaries(candidates: list) -> list:
+    """
+    For each candidate result, generate a summary.
+    """
     summaries = []
-    for result in search_results:
-        # Summarize the snippet via the AI summarizer.
-        snippet_summary = await summarize_with_ai(result["summary"], result["link"])
+    for candidate in candidates:
+        snippet_summary = await summarize_with_ai(candidate["snippet"], candidate["link"])
         summaries.append({
-            "title": result.get("title", "No title"),
-            "link": result.get("link", ""),
+            "title": candidate["title"],
+            "link": candidate["link"],
             "summary": snippet_summary
         })
     return summaries
+
+async def full_search_summarize(prompt: str) -> list:
+    """
+    Full RAG pipeline: First retrieve candidate nonprofit websites,
+    then generate summaries for each candidate.
+    """
+    candidates = await retrieve_nonprofit_candidates(prompt)
+    return await generate_nonprofit_summaries(candidates)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ##########################################
 # Functions for Recommendation Algorithm
@@ -280,6 +388,12 @@ else:
 
 # Use the recommendation algorithm to update the ordering of matches.
 update_recommendations()
+
+
+
+
+
+
 
 ##########################################
 # Swipe Interface with Callback Functions

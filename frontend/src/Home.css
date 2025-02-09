@@ -1,0 +1,115 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #1e1e2f, #3f3f55);
+    color: white;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: auto;
+  }
+  
+  .home-container {
+    padding: 40px 20px;
+    max-width: 800px;
+    width: 100%;
+  }
+  
+  .logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  
+  .logo {
+    max-width: 300px;
+    height: auto;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    border-radius: 12px;
+  }
+  
+  .intro-card {
+    background: linear-gradient(135deg, #2d2d3a, #3f3f55);
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    margin-bottom: 30px;
+  }
+  
+  .intro-tag {
+    font-size: 12px;
+    font-weight: bold;
+    color: #aaa;
+    text-transform: uppercase;
+  }
+  
+  .divider {
+    border: 1px solid #444;
+    margin: 10px 0;
+  }
+  
+  .intro-text {
+    font-size: 20px;
+    margin-bottom: 15px;
+  }
+  
+  .animated-fact {
+    font-size: 16px;
+    font-style: italic;
+  }
+  
+  .fact-label {
+    font-weight: bold;
+    color: #00d8ff;
+  }
+  
+  .home-content {
+    background: linear-gradient(135deg, #2f2f3f, #45455a);
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  .image-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  
+  .content-image {
+    max-width: 100%;
+    height: auto;
+  }
+  
+  .subheading {
+    font-size: 22px;
+    margin-top: 20px;
+  }
+  
+  .description {
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  
+  .button-container {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .start-button {
+    background-color: #6a5adf;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  .start-button:hover {
+    background-color: #00d8ff;
+  }
+  

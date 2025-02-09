@@ -1,0 +1,197 @@
+body {
+    font-family: "Arial", sans-serif;
+    background-color: #1e1e2f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  
+  .matches-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    height: 600px;
+    width: 400px;
+  }
+
+  .dislike-button {
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .dislike-button {
+    margin-right: 100px;
+  }
+  
+  .like-button {
+    margin-left: 100px;
+  }
+  
+  /* Position the Like button to the far right */
+  .like-button {
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  
+  .match-card {
+    background: linear-gradient(135deg, #2d2d3a, #3f3f55);
+    color: white;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    border: 1px solid transparent;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    align-items: center;
+    text-align: center;
+    overflow: hidden;
+  }
+  .match-card:hover {
+    color: #b2b2e4;
+    background: #2a1f7e;
+  }
+  
+  .match-card:hover::before {
+    opacity: 1;
+    animation: shimmer 1.5s linear infinite;
+  }
+  .match-card > * {
+    position: relative;
+    z-index: 10;
+  }
+  .match-card::before {
+    content: "";
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    right: -20px;
+    bottom: -20px;
+    border-radius: inherit;
+    background: linear-gradient(0deg, rgba(255,255,255,0) 50%, rgba(255,255,255,0.5) 50%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 1;
+  }
+  .match-card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #3a3a5f; /* Same as button background */
+    border-radius: inherit;
+    z-index: 3; /* This is above the ::before in the center */
+  }
+  .matches-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3000px; /* Adjust as needed */
+  }
+  
+  .match-card h3 {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+  
+  .match-card p {
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .match-card a {
+    color: #00d8ff;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  
+  .button-group {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    transform: translateY(-50%);
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px; /* Optional: add horizontal spacing from the container's edges */
+  }
+  
+  .shimmer-button {
+    width: 120px;
+    height: 60px;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    background: #3a3a5f;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden; /* still hide overflow */
+    cursor: pointer;
+    transition: background 0.4s ease, color 0.4s ease;
+  }
+  
+  .shimmer-button:hover {
+    color: #b2b2e4;
+    background: #6a5adf;
+  }
+  
+  .shimmer-button::before {
+    content: "";
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    right: -10px;
+    bottom: -10px;
+    border-radius: inherit;
+    background: linear-gradient(0deg, rgba(255,255,255,0) 50%, rgba(255,255,255,0.7) 50%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 2; /* Place this layer so it can be seen at the border */
+  }
+  
+  /* Activate the shimmer on hover */
+  .shimmer-button:hover::before {
+    opacity: 1;
+    animation: shimmer 1.5s linear infinite;
+  }
+  
+  /* This layer covers the inner area of the button so the glow only shows as a border */
+  .shimmer-button::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #3a3a5f; /* Same as button background */
+    border-radius: inherit;
+    z-index: 3; /* This is above the ::before in the center */
+  }
+  
+  /* Ensure that the button's text is on top of both pseudo-elements */
+  .shimmer-button > * {
+    position: relative;
+    z-index: 4;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
